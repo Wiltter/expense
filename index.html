@@ -3,11 +3,519 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test - Control de Gastos</title>
+  <title>Control de Gastos</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-dark: #210d10;
+      --color-brown: #802201;
+      --color-orange: #ff8001;
+      --color-yellow: #ffdb01;
+      --color-blue: #202971;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-brown) 50%, var(--color-blue) 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .reset-btn {
+      background: var(--color-brown);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .reset-btn:hover {
+      opacity: 0.8;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 24px;
+      text-align: center;
+      border-left: 4px solid;
+    }
+
+    .summary-card.balance { border-left-color: var(--color-yellow); }
+    .summary-card.income { border-left-color: var(--color-blue); }
+    .summary-card.expense { border-left-color: var(--color-orange); }
+
+    .summary-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .summary-amount {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .balance-positive { color: #16a34a; }
+    .balance-negative { color: #dc2626; }
+    .income-color { color: #16a34a; }
+    .expense-color { color: #dc2626; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .form-input, .form-select {
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--color-orange);
+      box-shadow: 0 0 0 3px rgba(255, 128, 1, 0.1);
+    }
+
+    .add-btn {
+      background: var(--color-orange);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .add-btn:hover {
+      opacity: 0.8;
+    }
+
+    .transactions-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .transaction-item {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .transaction-item.income {
+      background: #f0fdf4;
+      border-left-color: var(--color-blue);
+    }
+
+    .transaction-item.expense {
+      background: #fef2f2;
+      border-left-color: var(--color-orange);
+    }
+
+    .transaction-info {
+      flex: 1;
+    }
+
+    .transaction-amount {
+      font-size: 1.125rem;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .transaction-details {
+      display: flex;
+      gap: 12px;
+      font-size: 0.875rem;
+      color: #6b7280;
+      flex-wrap: wrap;
+    }
+
+    .transaction-category {
+      background: var(--color-brown);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .transaction-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .edit-btn { color: var(--color-blue); }
+    .delete-btn { color: var(--color-orange); }
+
+    .empty-state {
+      text-align: center;
+      color: #6b7280;
+      padding: 48px 16px;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .transaction-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      
+      .transaction-actions {
+        justify-content: center;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1>¡Funciona! 🎉</h1>
-  <p>Si ves esto, GitHub Pages está funcionando correctamente.</p>
-  <p>Ahora podemos proceder con la aplicación completa.</p>
+  <div class="container">
+    <!-- Header -->
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1 class="title">
+            💰 Control de Gastos
+          </h1>
+          <p class="subtitle">Gestiona tus ingresos y gastos mensuales</p>
+        </div>
+        <button class="reset-btn" onclick="resetData()">
+          🔄 Resetear
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="summary-grid">
+      <div class="summary-card balance">
+        <div class="summary-label">BALANCE</div>
+        <div class="summary-amount" id="balance">$0</div>
+      </div>
+      <div class="summary-card income">
+        <div class="summary-label">INGRESOS</div>
+        <div class="summary-amount income-color" id="total-income">$0</div>
+      </div>
+      <div class="summary-card expense">
+        <div class="summary-label">GASTOS</div>
+        <div class="summary-amount expense-color" id="total-expenses">$0</div>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card">
+      <h2 style="margin-bottom: 16px; color: #374151;">Nueva Transacción</h2>
+      <form id="transaction-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="type" onchange="updateCategories()">
+              <option value="expense">Gasto</option>
+              <option value="income">Ingreso</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-select" id="category">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input type="text" class="form-input" id="description" placeholder="Describe la transacción...">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Monto</label>
+            <input type="number" class="form-input" id="amount" step="0.01" placeholder="0.00">
+          </div>
+          
+          <div class="form-group" style="justify-content: end; display: flex; align-items: end;">
+            <button type="submit" class="add-btn">
+              ➕ Agregar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lista de transacciones -->
+    <div class="card">
+      <h2 style="margin-bottom: 16px; color: #374151;">Transacciones (<span id="transaction-count">0</span>)</h2>
+      <div class="transactions-list" id="transactions-list">
+        <div class="empty-state">
+          No hay transacciones registradas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const categories = {
+      income: ['Padres', 'Salario', 'Trabajos Extras', 'Otros'],
+      expense: ['Innecesario', 'Comida', 'Mercado', 'Servicios', 'Suplementos o Medicamentos', 'Otros']
+    };
+
+    let transactions = JSON.parse(localStorage.getItem('expense-tracker-data') || '[]');
+    let editingId = null;
+
+    function updateCategories() {
+      const type = document.getElementById('type').value;
+      const categorySelect = document.getElementById('category');
+      
+      categorySelect.innerHTML = '<option value="">Seleccionar...</option>';
+      categories[type].forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categorySelect.appendChild(option);
+      });
+    }
+
+    function saveData() {
+      localStorage.setItem('expense-tracker-data', JSON.stringify(transactions));
+    }
+
+    function updateSummary() {
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const totalExpenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const balance = totalIncome - totalExpenses;
+
+      document.getElementById('total-income').textContent = `$${totalIncome.toLocaleString('es-ES')}`;
+      document.getElementById('total-expenses').textContent = `$${totalExpenses.toLocaleString('es-ES')}`;
+      
+      const balanceElement = document.getElementById('balance');
+      balanceElement.textContent = `$${balance.toLocaleString('es-ES')}`;
+      balanceElement.className = `summary-amount ${balance >= 0 ? 'balance-positive' : 'balance-negative'}`;
+      
+      document.getElementById('transaction-count').textContent = transactions.length;
+    }
+
+    function renderTransactions() {
+      const container = document.getElementById('transactions-list');
+      
+      if (transactions.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay transacciones registradas</div>';
+        return;
+      }
+
+      container.innerHTML = transactions.map(transaction => `
+        <div class="transaction-item ${transaction.type}" id="transaction-${transaction.id}">
+          <div class="transaction-info">
+            <div class="transaction-amount ${transaction.type === 'income' ? 'income-color' : 'expense-color'}">
+              ${transaction.type === 'income' ? '+' : '-'}$${transaction.amount.toLocaleString('es-ES')}
+            </div>
+            <div class="transaction-details">
+              <span style="font-weight: 600;">${transaction.description}</span>
+              <span class="transaction-category">${transaction.category}</span>
+              <span>${transaction.date}</span>
+            </div>
+          </div>
+          <div class="transaction-actions">
+            <button class="action-btn edit-btn" onclick="editTransaction(${transaction.id})">✏️</button>
+            <button class="action-btn delete-btn" onclick="deleteTransaction(${transaction.id})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addTransaction(description, amount, type, category) {
+      const transaction = {
+        id: Date.now(),
+        description,
+        amount: parseFloat(amount),
+        type,
+        category,
+        date: new Date().toLocaleDateString('es-ES')
+      };
+      
+      transactions.unshift(transaction);
+      saveData();
+      updateSummary();
+      renderTransactions();
+    }
+
+    function deleteTransaction(id) {
+      if (confirm('¿Estás seguro de que quieres eliminar esta transacción?')) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveData();
+        updateSummary();
+        renderTransactions();
+      }
+    }
+
+    function editTransaction(id) {
+      const transaction = transactions.find(t => t.id === id);
+      if (!transaction) return;
+
+      const newDescription = prompt('Nueva descripción:', transaction.description);
+      if (newDescription === null) return;
+
+      const newAmount = prompt('Nuevo monto:', transaction.amount);
+      if (newAmount === null) return;
+
+      const amount = parseFloat(newAmount);
+      if (isNaN(amount) || amount <= 0) {
+        alert('Por favor ingresa un monto válido');
+        return;
+      }
+
+      transactions = transactions.map(t => 
+        t.id === id 
+          ? { ...t, description: newDescription.trim(), amount }
+          : t
+      );
+      
+      saveData();
+      updateSummary();
+      renderTransactions();
+    }
+
+    function resetData() {
+      if (confirm('¿Estás seguro de que quieres resetear todos los datos? Esta acción no se puede deshacer.')) {
+        transactions = [];
+        localStorage.removeItem('expense-tracker-data');
+        updateSummary();
+        renderTransactions();
+      }
+    }
+
+    // Event listeners
+    document.getElementById('transaction-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const description = document.getElementById('description').value.trim();
+      const amount = document.getElementById('amount').value;
+      const type = document.getElementById('type').value;
+      const category = document.getElementById('category').value;
+      
+      if (!description || !amount || !category) {
+        alert('Por favor completa todos los campos');
+        return;
+      }
+
+      if (parseFloat(amount) <= 0) {
+        alert('El monto debe ser mayor a 0');
+        return;
+      }
+
+      addTransaction(description, amount, type, category);
+      
+      // Limpiar formulario
+      document.getElementById('description').value = '';
+      document.getElementById('amount').value = '';
+      document.getElementById('category').value = '';
+    });
+
+    // Inicializar
+    updateCategories();
+    updateSummary();
+    renderTransactions();
+  </script>
 </body>
 </html>
