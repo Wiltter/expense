@@ -264,6 +264,59 @@
         justify-content: center;
       }
     }
+    /* Termómetros de gastos */
+.expense-meters {
+  margin-top: 24px;
+}
+
+.meters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.meter-container {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.meter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.thermometer {
+  width: 30px;
+  height: 120px;
+  margin: 0 auto 12px;
+  position: relative;
+  background: #e5e7eb;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.thermometer-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 15px;
+  transition: height 0.3s ease;
+}
+
+.meter-green { background: #22c55e; }
+.meter-yellow { background: var(--color-yellow); }
+.meter-red { background: #ef4444; }
+
+.meter-percentage {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #374151;
+} 
   </style>
 </head>
 <body>
@@ -484,6 +537,61 @@
         renderTransactions();
       }
     }
+    function renderExpenseMeters() {
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  if (totalIncome === 0) return '';
+
+  const expensesByCategory = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {});
+
+  const categoriesWithExpenses = Object.keys(expensesByCategory);
+  if (categoriesWithExpenses.length === 0) return '';
+
+  function getColorClass(category, percentage) {
+    if (category === 'Servicios') {
+      if (percentage < 20) return 'meter-green';
+      if (percentage <= 30) return 'meter-yellow';
+      return 'meter-red';
+    } else {
+      if (percentage < 7) return 'meter-green';
+      if (percentage <= 15) return 'meter-yellow';
+      return 'meter-red';
+    }
+  }
+
+  const metersHtml = categoriesWithExpenses.map(category => {
+    const amount = expensesByCategory[category];
+    const percentage = (amount / totalIncome) * 100;
+    const colorClass = getColorClass(category, percentage);
+    const fillHeight = Math.min(percentage * 2, 100); // Max 100% fill
+
+    return `
+      <div class="meter-container">
+        <div class="meter-label">${category}</div>
+        <div class="thermometer">
+          <div class="thermometer-fill ${colorClass}" style="height: ${fillHeight}%"></div>
+        </div>
+        <div class="meter-percentage">${percentage.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="expense-meters">
+      <h2 style="margin-bottom: 16px; color: #374151;">Medidores de Gastos</h2>
+      <div class="meters-grid">
+        ${metersHtml}
+      </div>
+    </div>
+  `;
+}
 
     // Event listeners
     document.getElementById('transaction-form').addEventListener('submit', function(e) {
@@ -515,7 +623,35 @@
     // Inicializar
     updateCategories();
     updateSummary();
-    renderTransactions();
+    function renderTransactions() {
+  const container = document.getElementById('transactions-list');
+  
+  if (transactions.length === 0) {
+    container.innerHTML = '<div class="empty-state">No hay transacciones registradas</div>';
+    return;
+  }
+
+  const transactionsHtml = transactions.map(transaction => `
+    <div class="transaction-item ${transaction.type}" id="transaction-${transaction.id}">
+      <div class="transaction-info">
+        <div class="transaction-amount ${transaction.type === 'income' ? 'income-color' : 'expense-color'}">
+          ${transaction.type === 'income' ? '+' : '-'}$${transaction.amount.toLocaleString('es-ES')}
+        </div>
+        <div class="transaction-details">
+          <span style="font-weight: 600;">${transaction.description}</span>
+          <span class="transaction-category">${transaction.category}</span>
+          <span>${transaction.date}</span>
+        </div>
+      </div>
+      <div class="transaction-actions">
+        <button class="action-btn edit-btn" onclick="editTransaction(${transaction.id})">✏️</button>
+        <button class="action-btn delete-btn" onclick="deleteTransaction(${transaction.id})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = transactionsHtml + renderExpenseMeters();
+};
   </script>
 </body>
 </html>
