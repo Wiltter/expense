@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Gastos</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    :root {
+      --color-dark: #210d10;
+      --color-brown: #802201;
+      --color-orange: #ff8001;
+      --color-yellow: #ffdb01;
+      --color-blue: #202971;
+    }
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .custom-bg {
+      background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-brown) 50%, var(--color-blue) 100%);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { PlusCircle, MinusCircle, DollarSign, TrendingUp, TrendingDown, RotateCcw, Trash2, Edit2, Save, X } = lucide;
+
+    const ExpenseTracker = () => {
+      const [transactions, setTransactions] = useState(() => {
+        const saved = localStorage.getItem('expense-tracker-data');
+        return saved ? JSON.parse(saved) : [];
+      });
+      const [description, setDescription] = useState('');
+      const [amount, setAmount] = useState('');
+      const [type, setType] = useState('expense');
+      const [category, setCategory] = useState('');
+      const [editingId, setEditingId] = useState(null);
+      const [editValues, setEditValues] = useState({});
+
+      useEffect(() => {
+        localStorage.setItem('expense-tracker-data', JSON.stringify(transactions));
+      }, [transactions]);
+
+      const categories = {
+        income: ['Padres', 'Salario', 'Trabajos Extras', 'Otros'],
+        expense: ['Innecesario', 'Comida', 'Mercado', 'Servicios', 'Suplementos o Medicamentos', 'Otros']
+      };
+
+      const addTransaction = () => {
+        if (!description || !amount || !category) return;
+        
+        const newTransaction = {
+          id: Date.now(),
+          description,
+          amount: parseFloat(amount),
+          type,
+          category,
+          date: new Date().toLocaleDateString('es-ES')
+        };
+        
+        setTransactions([newTransaction, ...transactions]);
+        setDescription('');
+        setAmount('');
+        setCategory('');
+      };
+
+      const deleteTransaction = (id) => {
+        setTransactions(transactions.filter(t => t.id !== id));
+      };
+
+      const startEditing = (transaction) => {
+        setEditingId(transaction.id);
+        setEditValues({
+          description: transaction.description,
+          amount: transaction.amount,
+          category: transaction.category
+        });
+      };
+
+      const saveEdit = (id) => {
+        setTransactions(transactions.map(t => 
+          t.id === id 
+            ? { ...t, ...editValues, amount: parseFloat(editValues.amount) }
+            : t
+        ));
+        setEditingId(null);
+        setEditValues({});
+      };
+
+      const cancelEdit = () => {
+        setEditingId(null);
+        setEditValues({});
+      };
+
+      const resetData = () => {
+        if (confirm('¿Estás seguro de que quieres resetear todos los datos? Esta acción no se puede deshacer.')) {
+          setTransactions([]);
+          localStorage.removeItem('expense-tracker-data');
+        }
+      };
+
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const totalExpenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const balance = totalIncome - totalExpenses;
+
+      return React.createElement('div', {
+        className: "min-h-screen custom-bg p-4"
+      }, 
+        React.createElement('div', {
+          className: "max-w-4xl mx-auto"
+        }, [
+          // Header con reset
+          React.createElement('div', {
+            key: 'header',
+            className: "bg-white rounded-xl shadow-lg p-6 mb-6"
+          }, [
+            React.createElement('div', {
+              key: 'header-content',
+              className: "flex justify-between items-center"
+            }, [
+              React.createElement('div', { key: 'title-section' }, [
+                React.createElement('h1', {
+                  key: 'title',
+                  className: "text-3xl font-bold text-gray-800 flex items-center"
+                }, [
+                  React.createElement(DollarSign, { 
+                    key: 'icon',
+                    className: "mr-3",
+                    style: { color: 'var(--color-orange)' }
+                  }),
+                  "Control de Gastos"
+                ]),
+                React.createElement('p', {
+                  key: 'subtitle',
+                  className: "text-gray-600 mt-1"
+                }, "Gestiona tus ingresos y gastos mensuales")
+              ]),
+              React.createElement('button', {
+                key: 'reset-btn',
+                onClick: resetData,
+                className: "flex items-center px-4 py-2 rounded-lg text-white font-medium hover:opacity-80 transition-opacity",
+                style: { backgroundColor: 'var(--color-brown)' }
+              }, [
+                React.createElement(RotateCcw, {
+                  key: 'reset-icon',
+                  size: 20,
+                  className: "mr-2"
+                }),
+                "Resetear"
+              ])
+            ])
+          ]),
+
+          // Resumen financiero destacado
+          React.createElement('div', {
+            key: 'summary',
+            className: "grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
+          }, [
+            React.createElement('div', {
+              key: 'balance',
+              className: "bg-white rounded-xl shadow-lg p-6 border-l-4",
+              style: { borderLeftColor: 'var(--color-yellow)' }
+            }, [
+              React.createElement('div', {
+                key: 'balance-content',
+                className: "text-center"
+              }, [
+                React.createElement('p', {
+                  key: 'balance-label',
+                  className: "text-sm font-medium text-gray-600 mb-2"
+                }, "BALANCE"),
+                React.createElement('p', {
+                  key: 'balance-amount',
+                  className: `text-4xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`
+                }, `$${balance.toLocaleString('es-ES')}`),
+                React.createElement(DollarSign, {
+                  key: 'balance-icon',
+                  className: "mx-auto mt-2",
+                  style: { color: 'var(--color-yellow)' },
+                  size: 24
+                })
+              ])
+            ]),
+            
+            React.createElement('div', {
+              key: 'income',
+              className: "bg-white rounded-xl shadow-lg p-6 border-l-4",
+              style: { borderLeftColor: 'var(--color-blue)' }
+            }, [
+              React.createElement('div', {
+                key: 'income-content',
+                className: "text-center"
+              }, [
+                React.createElement('p', {
+                  key: 'income-label',
+                  className: "text-sm font-medium text-gray-600 mb-2"
+                }, "INGRESOS"),
+                React.createElement('p', {
+                  key: 'income-amount',
+                  className: "text-4xl font-bold text-green-600"
+                }, `$${totalIncome.toLocaleString('es-ES')}`),
+                React.createElement(TrendingUp, {
+                  key: 'income-icon',
+                  className: "mx-auto mt-2",
+                  style: { color: 'var(--color-blue)' },
+                  size: 24
+                })
+              ])
+            ]),
+            
+            React.createElement('div', {
+              key: 'expenses',
+              className: "bg-white rounded-xl shadow-lg p-6 border-l-4",
+              style: { borderLeftColor: 'var(--color-orange)' }
+            }, [
+              React.createElement('div', {
+                key: 'expenses-content',
+                className: "text-center"
+              }, [
+                React.createElement('p', {
+                  key: 'expenses-label',
+                  className: "text-sm font-medium text-gray-600 mb-2"
+                }, "GASTOS"),
+                React.createElement('p', {
+                  key: 'expenses-amount',
+                  className: "text-4xl font-bold text-red-600"
+                }, `$${totalExpenses.toLocaleString('es-ES')}`),
+                React.createElement(TrendingDown, {
+                  key: 'expenses-icon',
+                  className: "mx-auto mt-2",
+                  style: { color: 'var(--color-orange)' },
+                  size: 24
+                })
+              ])
+            ])
+          ]),
+
+          // Formulario
+          React.createElement('div', {
+            key: 'form',
+            className: "bg-white rounded-xl shadow-lg p-6 mb-6"
+          }, [
+            React.createElement('h2', {
+              key: 'form-title',
+              className: "text-xl font-semibold mb-4 text-gray-800"
+            }, "Nueva Transacción"),
+            
+            React.createElement('div', {
+              key: 'form-grid',
+              className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"
+            }, [
+              React.createElement('div', { key: 'type-field' }, [
+                React.createElement('label', {
+                  key: 'type-label',
+                  className: "block text-sm font-medium text-gray-700 mb-2"
+                }, "Tipo"),
+                React.createElement('select', {
+                  key: 'type-select',
+                  value: type,
+                  onChange: (e) => {
+                    setType(e.target.value);
+                    setCategory('');
+                  },
+                  className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent",
+                  style: { focusRingColor: 'var(--color-orange)' }
+                }, [
+                  React.createElement('option', { key: 'income-option', value: "income" }, "Ingreso"),
+                  React.createElement('option', { key: 'expense-option', value: "expense" }, "Gasto")
+                ])
+              ]),
+              
+              React.createElement('div', { key: 'category-field' }, [
+                React.createElement('label', {
+                  key: 'category-label',
+                  className: "block text-sm font-medium text-gray-700 mb-2"
+                }, "Categoría"),
+                React.createElement('select', {
+                  key: 'category-select',
+                  value: category,
+                  onChange: (e) => setCategory(e.target.value),
+                  className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                }, [
+                  React.createElement('option', { key: 'empty-option', value: "" }, "Seleccionar..."),
+                  ...categories[type].map(cat => 
+                    React.createElement('option', { key: cat, value: cat }, cat)
+                  )
+                ])
+              ]),
+              
+              React.createElement('div', { key: 'description-field' }, [
+                React.createElement('label', {
+                  key: 'description-label',
+                  className: "block text-sm font-medium text-gray-700 mb-2"
+                }, "Descripción"),
+                React.createElement('input', {
+                  key: 'description-input',
+                  type: "text",
+                  value: description,
+                  onChange: (e) => setDescription(e.target.value),
+                  placeholder: "Describe la transacción...",
+                  className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                })
+              ]),
+              
+              React.createElement('div', { key: 'amount-field' }, [
+                React.createElement('label', {
+                  key: 'amount-label',
+                  className: "block text-sm font-medium text-gray-700 mb-2"
+                }, "Monto"),
+                React.createElement('input', {
+                  key: 'amount-input',
+                  type: "number",
+                  step: "0.01",
+                  value: amount,
+                  onChange: (e) => setAmount(e.target.value),
+                  placeholder: "0.00",
+                  className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                })
+              ]),
+              
+              React.createElement('div', {
+                key: 'button-field',
+                className: "flex items-end"
+              }, 
+                React.createElement('button', {
+                  onClick: addTransaction,
+                  className: "w-full text-white p-3 rounded-lg hover:opacity-80 transition-opacity flex items-center justify-center font-medium",
+                  style: { backgroundColor: 'var(--color-orange)' }
+                }, [
+                  React.createElement(type === 'income' ? PlusCircle : MinusCircle, {
+                    key: 'button-icon',
+                    size: 20,
+                    className: "mr-2"
+                  }),
+                  "Agregar"
+                ])
+              )
+            ])
+          ]),
+
+          // Lista de transacciones
+          React.createElement('div', {
+            key: 'transactions',
+            className: "bg-white rounded-xl shadow-lg p-6"
+          }, [
+            React.createElement('h2', {
+              key: 'transactions-title',
+              className: "text-xl font-semibold mb-4 text-gray-800"
+            }, `Transacciones (${transactions.length})`),
+            
+            React.createElement('div', {
+              key: 'transactions-list',
+              className: "space-y-3 max-h-96 overflow-y-auto"
+            }, 
+              transactions.length === 0 ? 
+                React.createElement('p', {
+                  className: "text-gray-500 text-center py-8"
+                }, "No hay transacciones registradas") :
+                transactions.map(transaction => 
+                  React.createElement('div', {
+                    key: transaction.id,
+                    className: `p-4 rounded-lg border-l-4 ${
+                      transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
+                    }`,
+                    style: { 
+                      borderLeftColor: transaction.type === 'income' ? 'var(--color-blue)' : 'var(--color-orange)'
+                    }
+                  }, 
+                    editingId === transaction.id ? 
+                      React.createElement('div', {
+                        className: "grid grid-cols-1 md:grid-cols-4 gap-3 items-center"
+                      }, [
+                        React.createElement('input', {
+                          key: 'edit-desc',
+                          type: "text",
+                          value: editValues.description,
+                          onChange: (e) => setEditValues({...editValues, description: e.target.value}),
+                          className: "p-2 border rounded focus:ring-2"
+                        }),
+                        React.createElement('select', {
+                          key: 'edit-cat',
+                          value: editValues.category,
+                          onChange: (e) => setEditValues({...editValues, category: e.target.value}),
+                          className: "p-2 border rounded focus:ring-2"
+                        }, 
+                          categories[transaction.type].map(cat => 
+                            React.createElement('option', { key: cat, value: cat }, cat)
+                          )
+                        ),
+                        React.createElement('input', {
+                          key: 'edit-amount',
+                          type: "number",
+                          step: "0.01",
+                          value: editValues.amount,
+                          onChange: (e) => setEditValues({...editValues, amount: e.target.value}),
+                          className: "p-2 border rounded focus:ring-2"
+                        }),
+                        React.createElement('div', {
+                          key: 'edit-buttons',
+                          className: "flex gap-2"
+                        }, [
+                          React.createElement('button', {
+                            key: 'save-btn',
+                            onClick: () => saveEdit(transaction.id),
+                            className: "text-green-600 hover:text-green-700 p-1"
+                          }, React.createElement(Save, { size: 18 })),
+                          React.createElement('button', {
+                            key: 'cancel-btn',
+                            onClick: cancelEdit,
+                            className: "text-gray-600 hover:text-gray-700 p-1"
+                          }, React.createElement(X, { size: 18 }))
+                        ])
+                      ]) :
+                      React.createElement('div', {
+                        className: "flex justify-between items-center"
+                      }, [
+                        React.createElement('div', {
+                          key: 'transaction-info',
+                          className: "flex-1"
+                        }, [
+                          React.createElement('div', {
+                            key: 'transaction-main',
+                            className: "flex items-center gap-3 mb-1"
+                          }, [
+                            React.createElement('span', {
+                              key: 'transaction-amount',
+                              className: `font-bold text-lg ${
+                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                              }`
+                            }, `${transaction.type === 'income' ? '+' : '-'}$${transaction.amount.toLocaleString('es-ES')}`),
+                            React.createElement('span', {
+                              key: 'transaction-desc',
+                              className: "text-gray-700 font-medium"
+                            }, transaction.description)
+                          ]),
+                          React.createElement('div', {
+                            key: 'transaction-meta',
+                            className: "flex items-center gap-3 text-sm"
+                          }, [
+                            React.createElement('span', {
+                              key: 'transaction-cat',
+                              className: "px-2 py-1 rounded text-white",
+                              style: { backgroundColor: 'var(--color-brown)' }
+                            }, transaction.category),
+                            React.createElement('span', {
+                              key: 'transaction-date',
+                              className: "text-gray-500"
+                            }, transaction.date)
+                          ])
+                        ]),
+                        React.createElement('div', {
+                          key: 'transaction-actions',
+                          className: "flex gap-2"
+                        }, [
+                          React.createElement('button', {
+                            key: 'edit-btn',
+                            onClick: () => startEditing(transaction),
+                            className: "p-2 rounded hover:bg-gray-100",
+                            style: { color: 'var(--color-blue)' }
+                          }, React.createElement(Edit2, { size: 16 })),
+                          React.createElement('button', {
+                            key: 'delete-btn',
+                            onClick: () => deleteTransaction(transaction.id),
+                            className: "p-2 rounded hover:bg-gray-100",
+                            style: { color: 'var(--color-orange)' }
+                          }, React.createElement(Trash2, { size: 16 }))
+                        ])
+                      ])
+                  )
+                )
+            )
+          ])
+        ])
+      );
+    };
+
+    ReactDOM.render(React.createElement(ExpenseTracker), document.getElementById('root'));
+  </script>
+</body>
+</html>
