@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Gastos</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -330,9 +331,14 @@
           </h1>
           <p class="subtitle">Gestiona tus ingresos y gastos mensuales</p>
         </div>
-        <button class="reset-btn" onclick="resetData()">
-          🔄 Resetear
-        </button>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+  <button class="reset-btn" onclick="exportToExcel()" style="background: var(--color-blue);">
+    📊 Exportar Excel
+  </button>
+  <button class="reset-btn" onclick="resetData()">
+    🔄 Resetear
+  </button>
+</div>
       </div>
     </div>
 
@@ -652,6 +658,57 @@
 
   container.innerHTML = transactionsHtml + renderExpenseMeters();
 };
+function exportToExcel() {
+      const totalIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const totalExpenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const balance = totalIncome - totalExpenses;
+
+      // Crear datos del resumen
+      const summaryData = [
+        ['RESUMEN DEL MES', ''],
+        ['Total Ingresos', `$${totalIncome.toLocaleString('es-ES')}`],
+        ['Total Gastos', `$${totalExpenses.toLocaleString('es-ES')}`], 
+        ['Balance', `$${balance.toLocaleString('es-ES')}`],
+        ['', ''],
+        ['Fecha de Exportación', new Date().toLocaleDateString('es-ES')]
+      ];
+      
+      // Crear datos de transacciones
+      const transactionData = [
+        ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Monto']
+      ];
+      
+      transactions.forEach(t => {
+        transactionData.push([
+          t.date, 
+          t.description, 
+          t.category, 
+          t.type === 'income' ? 'Ingreso' : 'Gasto',
+          `$${t.amount.toLocaleString('es-ES')}`
+        ]);
+      });
+      
+      // Crear libro Excel
+      const workbook = XLSX.utils.book_new();
+      
+      // Hoja 1: Resumen
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen");
+      
+      // Hoja 2: Transacciones
+      const transactionSheet = XLSX.utils.aoa_to_sheet(transactionData);
+      XLSX.utils.book_append_sheet(workbook, transactionSheet, "Transacciones");
+      
+      // Descargar archivo
+      const fileName = `Control_Gastos_${new Date().toISOString().slice(0,7)}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    }
   </script>
 </body>
 </html>
